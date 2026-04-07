@@ -156,3 +156,24 @@ def test_is_mistral_model_repo(files: list[str], expected_bool: bool):
             repo_type="model",
             token="token",
         )
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "s3://my-bucket/my-model",
+        "gs://my-bucket/my-model",
+        "az://my-bucket/my-model",
+    ],
+)
+def test_get_model_path_cloud_uri_offline(monkeypatch: pytest.MonkeyPatch, uri: str):
+    import huggingface_hub.constants
+
+    monkeypatch.setattr(huggingface_hub.constants, "HF_HUB_OFFLINE", True)
+    from vllm.transformers_utils.repo_utils import get_model_path
+
+    # Verify that supported cloud storage URIs bypass the HF Hub downloader
+    # entirely in offline mode, preventing an HFValidationError crash.
+    with patch("huggingface_hub.snapshot_download") as mock_snapshot_download:
+        assert get_model_path(uri) == uri
+        mock_snapshot_download.assert_not_called()

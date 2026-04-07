@@ -204,6 +204,12 @@ def file_or_path_exists(
 def get_model_path(model: str | Path, revision: str | None = None):
     if os.path.exists(model):
         return model
+
+    # Cloud storage URIs are not Hugging Face repo IDs.
+    from vllm.transformers_utils.runai_utils import is_runai_obj_uri
+    if isinstance(model, str) and is_runai_obj_uri(model):
+        return model
+
     assert huggingface_hub.constants.HF_HUB_OFFLINE
     common_kwargs = {
         "local_files_only": huggingface_hub.constants.HF_HUB_OFFLINE,
